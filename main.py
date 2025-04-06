@@ -35,6 +35,7 @@ async def get_recommendations(request: RecommendationRequest):
             filters=filters
         )
         
+        # Convert to JSON-friendly format
         results = recommendations.drop(columns=['embedding']).to_dict('records')
         return {"recommendations": results}
     except Exception as e:
@@ -42,4 +43,4 @@ async def get_recommendations(request: RecommendationRequest):
 
 if _name_ == "_main_":
     port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run("main:app", host="0.0.0.0", port=port)
