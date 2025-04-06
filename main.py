@@ -3,6 +3,11 @@ from pydantic import BaseModel
 from typing import Optional
 from recommendation_engine import AssessmentRecommender
 import uvicorn
+import os
+import google.generativeai as genai
+
+# Configure Gemini API
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 app = FastAPI()
 
@@ -30,12 +35,11 @@ async def get_recommendations(request: RecommendationRequest):
             filters=filters
         )
         
-        # Convert to JSON-friendly format
         results = recommendations.drop(columns=['embedding']).to_dict('records')
         return {"recommendations": results}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-if __name__ == "__main__":
-    import os
+
+if _name_ == "_main_":
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
