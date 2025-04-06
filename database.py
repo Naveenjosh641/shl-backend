@@ -1,34 +1,28 @@
-import openai
-from sentence_transformers import SentenceTransformer
-import numpy as np
-import pandas as pd
+import requests
 
-# Load assessments data
-assessments_df = pd.read_csv('shl_assessments.csv')
-
-# Prepare descriptions
-assessment_descriptions = assessments_df.apply(
-    lambda row: f"{row['name']}. Test type: {row['test_type']}. Duration: {row['duration']}. Remote: {row['remote_support']}. Adaptive: {row['adaptive_support']}",
-    axis=1
-).tolist()
+API_KEY = "AIzaSyC3uUbmMcd8BuJ1ti6ejMs_81g9EhbPQiI"
+GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}"
 
 def generate_embeddings(texts):
-    try:
-        # Try using OpenAI embeddings first
-        response = openai.Embedding.create(
-            input=texts,
-            model="text-embedding-ada-002"
-        )
-        return [item['embedding'] for item in response['data']]
-    except Exception as e:
-        print("⚠️ Falling back to local embedding model due to error:", e)
-        # Now load and use the local model
-        embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-        return embedding_model.encode(texts).tolist()
+    embeddings = []
+    for text in texts:
+        prompt = f"Generate a numerical vector representation (embedding) for the following text:\n\n\"{text}\""
+        payload = {
+            "contents": [
+                {
+                    "parts": [{"text": prompt}]
+                }
+            ]
+        }
+        response = requests.post(GEMINI_URL, json=payload)
+        data = response.json()
 
-# Generate embeddings
-embeddings = generate_embeddings(assessment_descriptions)
-assessments_df['embedding'] = embeddings
-
-# Save for later use
-assessments_df.to_pickle('assessments_with_embeddings.pkl')
+        try:
+            content = data['candidates'][0]['content']['parts'][0]['text']
+            # Convert string of numbers to list of floats
+            vector = [float(x) for x in content.strip("[]").split(",")]
+            embeddings.append(vector)
+        except Exception as e:
+            raise ValueError(f"Failed to extract embedding: {e}\nResponse: {data}")
+    
+    return embeddings
