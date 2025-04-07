@@ -3,8 +3,7 @@ import numpy as np
 
 # Load model once (outside the function if possible)
 try:
-    model = SentenceTransformer("all-MiniLM-L6-v2")
-    model.save("./")
+    model = SentenceTransformer(".")
 except Exception as load_err:
     model = None
     print(f"[ERROR] Could not load model: {load_err}")
