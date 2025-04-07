@@ -1,0 +1,7 @@
+name,test_type,duration,remote_support,adaptive_support,url
+Java Developer Assessment,Technical,60,True,True,https://example.com/java-dev
+Python + SQL Proficiency Test,Technical,45,True,False,https://example.com/python-sql
+Cognitive Ability Test,Cognitive,30,True,True,https://example.com/cognitive
+Personality Assessment,Personality,20,False,False,https://example.com/personality
+Full Stack Developer Challenge,Technical,90,True,True,https://example.com/fullstack
+Business Analyst Combo Test,Mixed,60,False,True,https://example.com/ba-combo
