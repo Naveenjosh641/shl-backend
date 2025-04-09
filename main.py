@@ -1,28 +1,34 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from typing import Optional
+from fastapi.middleware.cors import CORSMiddleware
 from recommendation_engine import AssessmentRecommender
-import uvicorn
 
 app = FastAPI()
 
-class RecommendationRequest(BaseModel):
-    query: str
-    max_results: Optional[int] = 10
-    max_duration: Optional[int] = None
-    remote_only: Optional[bool] = False
-    adaptive_only: Optional[bool] = False
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@app.post("/recommend")
-async def get_recommendations(request: RecommendationRequest):
+recommender = AssessmentRecommender()
+
+@app.get("/recommend")
+async def recommend_assessments(query: str):
+    if not query:
+        raise HTTPException(status_code=400, detail="Query parameter is required")
+    
     try:
-        recommender = AssessmentRecommender()
-        recommendations = recommender.recommend_assessments(request.query)
-        return {"recommendations": recommendations}
+        recommendations = recommender.recommend_assessments(query)
+        return {
+            "status": "success",
+            "results": recommendations
+        }
     except Exception as e:
-        print(f"Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-if _name_ == "_main_":
-    import os
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+# Corrected the main block
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=10000)
