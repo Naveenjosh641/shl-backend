@@ -34,18 +34,17 @@ def search_assessments(query: str) -> List[Dict]:
             
             if match_score > 0:
                 results.append({
-                    'name': assessment['name'],
-                    'url': assessment['url'],
-                    'remote_testing': assessment['remote_testing'],
-                    'adaptive_irt': assessment['adaptive_irt'],
-                    'duration': assessment['duration'],
-                    'test_type': assessment['test_type'],
-                    'score': match_score
+                    'Assessment': f"[{assessment['name']}]({assessment['url']})",
+                    'Duration': f"{assessment.get('duration', 'N/A')} minutes",
+                    'Test Type': assessment.get('test_type', 'N/A'),
+                    'Remote Testing': 'Yes' if str(assessment.get('remote_testing', '')).lower() == 'true' else 'No',
+                    'Adaptive/IRT': 'Yes' if str(assessment.get('adaptive_irt', '')).lower() == 'true' else 'No',
+                    '_score': match_score  # Internal field for sorting
                 })
         
-        # Sort by match score and return top 10
-        results.sort(key=lambda x: x['score'], reverse=True)
-        return results[:10]
+        # Sort by match score and return top 10 (excluding internal _score from final output)
+        results.sort(key=lambda x: x['_score'], reverse=True)
+        return [{k: v for k, v in item.items() if k != '_score'} for item in results[:10]]
     except Exception as e:
         print(f"Search error: {e}")
         return []
