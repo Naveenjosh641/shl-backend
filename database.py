@@ -35,14 +35,14 @@ class Database:
             assessment['adaptive_irt'],
             assessment['duration'],
             assessment['test_type'],
-            assessment.get('keywords', '')  # Store keywords for matching
+            assessment.get('keywords', '')
         ))
         self.conn.commit()
     
     def search_assessments(self, query: str, limit: int = 10) -> List[Dict]:
         cursor = self.conn.cursor()
         
-        # Simple keyword matching approach
+        # Process query and find matches
         query_keywords = set(re.findall(r'\w+', query.lower()))
         
         cursor.execute('SELECT * FROM assessments')
@@ -67,29 +67,7 @@ class Database:
         
         # Sort by match score and return top results
         scored_assessments.sort(key=lambda x: x['score'], reverse=True)
-        return scored_assessments[:limit]
+        return [item for item in scored_assessments if item['score'] > 0][:limit]
     
     def close(self):
         self.conn.close()
-
-# Example usage
-if __name__ == "__main__":
-    db = Database()
-    
-    # Example assessment data (you should populate this with real SHL data)
-    example_assessment = {
-        'name': 'Java Programming Test',
-        'url': 'https://www.shl.com/assessments/java-test',
-        'remote_testing': 'Yes',
-        'adaptive_irt': 'No',
-        'duration': '40 minutes',
-        'test_type': 'Programming',
-        'keywords': 'java programming coding developer'
-    }
-    
-    db.insert_assessment(example_assessment)
-    
-    results = db.search_assessments("I need a Java test for developers")
-    print(results)
-    
-    db.close()
