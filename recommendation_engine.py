@@ -1,28 +1,34 @@
-from sklearn.metrics.pairwise import cosine_similarity
-import numpy as np
-import pandas as pd
-from database import generate_embeddings
+from database import Database
+from typing import List, Dict
 
 class AssessmentRecommender:
-    def _init_(self, data_path='assessments_with_embeddings.pkl'):
-        self.df = pd.read_pickle(data_path)
-        self.embeddings = np.vstack(self.df['embedding'].values)
+    def __init__(self):
+        self.db = Database()
+    
+    def recommend_assessments(self, query: str) -> List[Dict]:
+        """
+        Recommends assessments based on the input query
+        Args:
+            query: Natural language query or job description
+        Returns:
+            List of recommended assessments with their details
+        """
+        # Search assessments using the keyword-based approach
+        assessments = self.db.search_assessments(query)
         
-    def recommend(self, query, max_results=10, filters=None):
-        query_embedding = generate_embeddings([query])[0]
-        similarities = cosine_similarity([query_embedding], self.embeddings)[0]
+        # Format the results
+        recommendations = []
+        for assessment in assessments:
+            recommendations.append({
+                'name': assessment['name'],
+                'url': assessment['url'],
+                'remote_testing': assessment['remote_testing'],
+                'adaptive_irt': assessment['adaptive_irt'],
+                'duration': assessment['duration'],
+                'test_type': assessment['test_type']
+            })
         
-        results_df = self.df.copy()
-        results_df['similarity'] = similarities
-        
-        if filters:
-            if 'max_duration' in filters:
-                results_df['duration'] = pd.to_numeric(results_df['duration'], errors='coerce')
-                results_df = results_df[results_df['duration'] <= filters['max_duration']]
-            if 'remote_only' in filters and filters['remote_only']:
-                results_df = results_df[results_df['remote_support'] == 'Yes']
-            if 'adaptive_only' in filters and filters['adaptive_only']:
-                results_df = results_df[results_df['adaptive_support'] == 'Yes']
-        
-        results_df = results_df.sort_values('similarity', ascending=False)
-        return results_df.head(max_results).to_dict(orient="records")
+        return recommendations
+    
+    def close(self):
+        self.db.close()
