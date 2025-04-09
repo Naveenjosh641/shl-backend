@@ -1,73 +1,35 @@
-import sqlite3
-from typing import List, Dict
+import csv
 import re
+from typing import List, Dict
 
-class Database:
-    def __init__(self, db_path: str = "shl_assessments.db"):
-        self.conn = sqlite3.connect(db_path)
-        self.create_tables()
+def load_assessments():
+    with open('shl_assessments.csv', mode='r') as file:
+        return list(csv.DictReader(file))
+
+def search_assessments(query: str) -> List[Dict]:
+    if not query:
+        return []
     
-    def create_tables(self):
-        cursor = self.conn.cursor()
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS assessments (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT,
-                url TEXT,
-                remote_testing TEXT,
-                adaptive_irt TEXT,
-                duration TEXT,
-                test_type TEXT,
-                keywords TEXT
-            )
-        ''')
-        self.conn.commit()
+    assessments = load_assessments()
+    query_words = set(re.findall(r'\w+', query.lower()))
     
-    def insert_assessment(self, assessment: Dict):
-        cursor = self.conn.cursor()
-        cursor.execute('''
-            INSERT INTO assessments (name, url, remote_testing, adaptive_irt, duration, test_type, keywords)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            assessment['name'],
-            assessment['url'],
-            assessment['remote_testing'],
-            assessment['adaptive_irt'],
-            assessment['duration'],
-            assessment['test_type'],
-            assessment.get('keywords', '')
-        ))
-        self.conn.commit()
-    
-    def search_assessments(self, query: str, limit: int = 10) -> List[Dict]:
-        cursor = self.conn.cursor()
+    results = []
+    for assessment in assessments:
+        search_text = f"{assessment['name']} {assessment.get('keywords', '')}".lower()
+        assessment_words = set(re.findall(r'\w+', search_text))
         
-        # Process query and find matches
-        query_keywords = set(re.findall(r'\w+', query.lower()))
+        match_score = len(query_words.intersection(assessment_words))
         
-        cursor.execute('SELECT * FROM assessments')
-        all_assessments = cursor.fetchall()
-        
-        # Score assessments based on keyword matches
-        scored_assessments = []
-        for assessment in all_assessments:
-            id_, name, url, remote, adaptive, duration, test_type, keywords = assessment
-            assessment_keywords = set(re.findall(r'\w+', (name + ' ' + keywords).lower()))
-            match_score = len(query_keywords.intersection(assessment_keywords))
-            
-            scored_assessments.append({
-                'score': match_score,
-                'name': name,
-                'url': url,
-                'remote_testing': remote,
-                'adaptive_irt': adaptive,
-                'duration': duration,
-                'test_type': test_type
+        if match_score > 0:
+            results.append({
+                'name': assessment['name'],
+                'url': assessment['url'],
+                'remote_support': assessment['remote_support'],
+                'adaptive_support': assessment['adaptive_support'],
+                'duration': assessment['duration'],
+                'test_type': assessment['test_type'],
+                'score': match_score
             })
-        
-        # Sort by match score and return top results
-        scored_assessments.sort(key=lambda x: x['score'], reverse=True)
-        return [item for item in scored_assessments if item['score'] > 0][:limit]
     
-    def close(self):
-        self.conn.close()
+    results.sort(key=lambda x: x['score'], reverse=True)
+    return results[:10]
