@@ -3,6 +3,8 @@ from pydantic import BaseModel
 from typing import Optional
 from recommendation_engine import AssessmentRecommender
 import uvicorn
+from recommendation_engine import AssessmentRecommender
+# not from database import generate_embeddings
 
 app = FastAPI()
 
